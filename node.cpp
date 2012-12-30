@@ -40,10 +40,11 @@ bool CNode::assignChild(CNode *child)
 void CNode::setLeftChild(CNode *left)
 {
 	m_left = left;
-	//unlikely that we'll be assigning null pointers
-	//but just in case
 	if(left != 0)
 		m_left->setParent(this);
+	//if the new child is actually a parent, we dun goofed somewhere.
+	//look through the code again
+
 }
 
 void CNode::setRightChild(CNode *right)

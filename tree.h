@@ -32,6 +32,8 @@ public:
 	//It doesn't fully optimize it, but its close enough
 	void addNode(CNode *node);
 
+	//simply adds without rebalancing
+	void push(CNode *node);
 
 	//Transformations
 	//This function simply checks if there isn't red children to red parents
@@ -52,6 +54,8 @@ public:
 	void fixLeftRightRedImbalance(CNode *node);
 	void fixRightRightRedImbalance(CNode *node);
 	void fixRightLeftRedImbalance(CNode *node);
+
+
 
 
 	//Search function

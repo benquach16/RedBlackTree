@@ -9,14 +9,15 @@ CTree::CTree() : m_median(0)
 {
 
 	//Root should be black
-	/*
+	
 	m_median = new CNode(50, BLACK);
 	CNode *test = new CNode(17);
 	CNode *n = new CNode(14);
 	CNode *r = new CNode(64);
 	CNode *l = new CNode(100);
 	CNode *e = new CNode(72);
-	CNode *p = new CNode(5);
+	CNode *p = new CNode(110);
+	CNode *o = new CNode(120);
 
 	addNode(test);
 	addNode(n);
@@ -24,7 +25,8 @@ CTree::CTree() : m_median(0)
 	addNode(l);
 	addNode(e);
 	addNode(p);
-	*/
+	addNode(o);
+	
 }
 
 int CTree::findNumLeftChildren(CNode *node)
@@ -83,11 +85,57 @@ bool CTree::isNodeBalanced(CNode *node)
 
 void CTree::addNode(CNode *node)
 {
-	//go down the tree, adding it where its appropriate
-	//then balance
-	//we set newly added nodes as red
-	//node->setNodeColor(RED);
+	push(node);
+	node->setNodeColor(RED);
+	
+	while((node != m_median) && (node->getParent()->getNodeColor() == RED))
+	{
+		//we have double red
+		//so we start transformations
+		std::cout << "balancing " << node->getValue() << std::endl;
+		std::cout << "root " << m_median->getValue() << std::endl;
+		if(node->getParent()->getValue() < node->getParent()->getParent()->getValue())
+		{
+			//left sided
+			if(node == node->getParent()->getLeftChild())
+			{
+				//left left side double red
+				fixLeftLeftRedImbalance(node);
+			}
+			else
+			{
+				//has to be right sided then
+				fixLeftRightRedImbalance(node);
+			}
+		}
+		else
+		{
+			//right sided
+			if(node == node->getParent()->getRightChild())
+			{
+				fixRightRightRedImbalance(node);
+			}
+			else
+			{
+				fixRightLeftRedImbalance(node);
+			}
+		}
+
+		node = node->getParent();
+
+	}
+	
+
+	//make sure root is black after this
+	//so we don't accidently change it
+	m_median->setNodeColor(BLACK);
+	
+}
+
+void CTree::push(CNode *node)
+{
 	CNode *root = m_median;
+	std::cout << "adding value " << node->getValue() << std::endl;
 	if(root == 0)
 	{
 		//If there was no root to begin with
@@ -99,57 +147,20 @@ void CTree::addNode(CNode *node)
 		//since the assignchild memberfunction returns false
 		//when the node already has a child, we keep going down
 		//until we find one without a child
-		while(!root->assignChild(node))
+		while(root->assignChild(node) == false)
 		{
-			//theres children already so we check them
-			//then we set root to the child
 			if(node->getValue() < root->getValue())
 			{
+				//left
 				root = root->getLeftChild();
-			}
-			if(node->getValue() > root->getValue())
-			{
-				root = root->getRightChild();
-			}
-		}
-		//once its added, we check if its parent is red
-		if(node->getParent()->getNodeColor() == RED)
-		{
-			//we have double red
-			//so we start transformations
-
-			if(node->getParent()->getValue() < node->getParent()->getParent()->getValue())
-			{
-				//left sided
-				if(node == node->getParent()->getLeftChild())
-				{
-					//left left side double red
-					fixLeftLeftRedImbalance(node);
-				}
-				else
-				{
-					//has to be right sided then
-					fixLeftRightRedImbalance(node);
-				}
 			}
 			else
 			{
-				//right sided
-				if(node == node->getParent()->getRightChild())
-				{
-					fixRightRightRedImbalance(node);
-				}
-				else
-				{
-					fixRightLeftRedImbalance(node);
-				}
+				//right
+				root = root->getRightChild();
 			}
 		}
 	}
-	//make sure root is black after this
-	//so we don't accidently change it
-	m_median->setNodeColor(BLACK);
-	
 }
 
 CNode* CTree::findValue(int value)
@@ -157,10 +168,9 @@ CNode* CTree::findValue(int value)
 	//we'll return 0 if it wasn't found
 
 	CNode *node = m_median;
-
 	while(value != node->getValue())
 	{
-		//std::cout << "checking value " << node->getValue() << std::endl;
+		std::cout << "checking value " << node->getValue() << std::endl;
 		if(value < node->getValue())
 		{
 			//check the left child
@@ -196,37 +206,38 @@ void CTree::fixLeftLeftRedImbalance(CNode *node)
 	//Check the header file for a rough diagram of what it does
 	CNode *parent = node->getParent();
 	CNode *grandparent = node->getParent()->getParent();
-	if(parent->getParent()->getParent() == 0)
+	if(grandparent == m_median)
 	{
-		//parents parent was the root
+		//grandparent was the root
 		m_median = parent;
 	}
 	else
 	{
 		//we reassign the root cause we just broke a chain
-		if(parent->getParent() == parent->getParent()->getParent()->getLeftChild())
+		if(grandparent == grandparent->getParent()->getLeftChild())
 		{
 			//was a left child
-			parent->getParent()->getParent()->setLeftChild(parent);
+			grandparent->getParent()->setLeftChild(parent);
 		}
 		else
 		{
 			//right child
-			parent->getParent()->getParent()->setRightChild(parent);
+			grandparent->getParent()->setRightChild(parent);
 		}
 	}
 	//parent will be the new red node
 	//parent of the parent and node will become black
 	//parent of parent becomes the new right and node becomes left
 	//parent is a left child node
-	if(parent->getRightChild() !=0)
-	{
-		parent->getParent()->setLeftChild(parent->getRightChild());
-	}
+	grandparent->setLeftChild(parent->getRightChild());
+
 	parent->setRightChild(grandparent);
+	parent->setLeftChild(node);
 	//quick and easy
 	//since parent and node are red, we fix that
 	node->setNodeColor(BLACK);
+	grandparent->setNodeColor(BLACK);
+	std::cout << "left " << node->getValue() << " parent " << parent->getValue() << " right " << grandparent->getValue() << std::endl;
 }
 
 void CTree::fixLeftRightRedImbalance(CNode *node)
@@ -234,7 +245,7 @@ void CTree::fixLeftRightRedImbalance(CNode *node)
 	//similar to above function but
 	CNode *parent = node->getParent();
 	CNode *grandparent = node->getParent()->getParent();
-	if(parent->getParent()->getParent() == 0)
+	if(parent->getParent() == m_median)
 	{
 		//parents parent was the root
 		//maake sure we don't 'lose' the old root though
@@ -243,15 +254,15 @@ void CTree::fixLeftRightRedImbalance(CNode *node)
 	else
 	{
 		//we reassign the root cause we just broke a chain
-		if(parent->getParent() == parent->getParent()->getParent()->getLeftChild())
+		if(grandparent == grandparent->getParent()->getLeftChild())
 		{
 			//was a left child
-			parent->getParent()->getParent()->setLeftChild(node);
+			grandparent->getParent()->setLeftChild(node);
 		}
 		else
 		{
 			//right child
-			parent->getParent()->getParent()->setRightChild(node);
+			grandparent->getParent()->setRightChild(node);
 		}
 	}
 	//since the new node is on the right side, it becomes the new root of this sub branch
@@ -261,14 +272,16 @@ void CTree::fixLeftRightRedImbalance(CNode *node)
 	{
 		parent->setRightChild(node->getLeftChild());
 	}
-	if(node->getRightChild() !=0)
-	{
-		parent->getParent()->setLeftChild(node->getRightChild());
-	}
+
+	grandparent->setLeftChild(node->getRightChild());
+
 	node->setLeftChild(parent);
 	node->setRightChild(grandparent);
 	//node remains red
+	//parent goes black
 	parent->setNodeColor(BLACK);
+	grandparent->setNodeColor(BLACK);
+	std::cout << "left " << parent->getValue() << " parent " << node->getValue() << " right " << grandparent->getValue() << std::endl;
 }
 
 void CTree::fixRightLeftRedImbalance(CNode *node)
@@ -276,7 +289,7 @@ void CTree::fixRightLeftRedImbalance(CNode *node)
 	CNode *parent = node->getParent();
 	CNode *grandparent = node->getParent()->getParent();
 	//new node is now root
-	if(parent->getParent()->getParent() == 0)
+	if(parent->getParent() == m_median)
 	{
 		//parents parent was the root
 		m_median = node;
@@ -284,29 +297,29 @@ void CTree::fixRightLeftRedImbalance(CNode *node)
 	else
 	{
 		//we reassign the root cause we just broke a chain
-		if(parent->getParent() == parent->getParent()->getParent()->getLeftChild())
+		if(grandparent == grandparent->getParent()->getLeftChild())
 		{
 			//was a left child
-			parent->getParent()->getParent()->setLeftChild(node);
+			grandparent->getParent()->setLeftChild(node);
 		}
 		else
 		{
 			//right child
-			parent->getParent()->getParent()->setRightChild(node);
+			grandparent->getParent()->setRightChild(node);
 		}
 	}
 	if(node->getRightChild() != 0)
 	{
 		parent->setLeftChild(node->getRightChild());
 	}
-	if(node->getLeftChild() != 0)
-	{
-		parent->getParent()->setRightChild(node->getLeftChild());
-	}
+
+	grandparent->setRightChild(node->getLeftChild());
+
 	node->setRightChild(parent);
 	node->setLeftChild(grandparent);
 	parent->setNodeColor(BLACK);
-	parent->getParent()->setNodeColor(BLACK);
+	grandparent->setNodeColor(BLACK);
+	std::cout << "left " << grandparent->getValue() << " parent " << node->getValue() << " right " << parent->getValue() << std::endl;
 }
 
 void CTree::fixRightRightRedImbalance(CNode *node)
@@ -314,7 +327,7 @@ void CTree::fixRightRightRedImbalance(CNode *node)
 	CNode *parent = node->getParent();
 	CNode *grandparent = node->getParent()->getParent();
 	//parent is now root
-	if(parent->getParent()->getParent() == 0)
+	if(parent->getParent() == m_median)
 	{
 		//parents parent was the root
 		m_median = parent;
@@ -322,22 +335,25 @@ void CTree::fixRightRightRedImbalance(CNode *node)
 	else
 	{
 		//we reassign the root cause we just broke a chain
-		if(parent->getParent() == parent->getParent()->getParent()->getLeftChild())
+		if(grandparent == parent->getParent()->getParent()->getLeftChild())
 		{
 			//was a left child
-			parent->getParent()->getParent()->setLeftChild(parent);
+			grandparent->getParent()->setLeftChild(parent);
 		}
 		else
 		{
 			//right child
-			parent->getParent()->getParent()->setRightChild(parent);
+			grandparent->getParent()->setRightChild(parent);
 		}
 	}
 
-	if(parent->getLeftChild() != 0)
-	{
-		parent->getParent()->setRightChild(parent->getLeftChild());
-	}
+
+	grandparent->setRightChild(parent->getLeftChild());
+	
 	parent->setLeftChild(grandparent);
+	parent->setRightChild(node);
 	node->setNodeColor(BLACK);
+	grandparent->setNodeColor(BLACK);
+	std::cout << "left " << grandparent->getValue() << " parent " << parent->getValue() << " right " << node->getValue() << std::endl;
 }
+
