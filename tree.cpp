@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "tree.h"
 
+#define TREE_DEBUG 0
+
 //constructor
 CTree::CTree() : m_median(0)
 {
@@ -92,8 +94,11 @@ void CTree::addNode(CNode *node)
 	{
 		//we have double red
 		//so we start transformations
-		std::cout << "balancing " << node->getValue() << std::endl;
-		std::cout << "root " << m_median->getValue() << std::endl;
+		if(TREE_DEBUG)
+		{
+			std::cout << "balancing " << node->getValue() << std::endl;
+			std::cout << "root " << m_median->getValue() << std::endl;
+		}
 		if(node->getParent()->getValue() < node->getParent()->getParent()->getValue())
 		{
 			//left sided
@@ -135,7 +140,8 @@ void CTree::addNode(CNode *node)
 void CTree::push(CNode *node)
 {
 	CNode *root = m_median;
-	std::cout << "adding value " << node->getValue() << std::endl;
+	if(TREE_DEBUG)
+		std::cout << "adding value " << node->getValue() << std::endl;
 	if(root == 0)
 	{
 		//If there was no root to begin with
@@ -170,7 +176,9 @@ CNode* CTree::findValue(int value)
 	CNode *node = m_median;
 	while(value != node->getValue())
 	{
-		std::cout << "checking value " << node->getValue() << std::endl;
+		if(TREE_DEBUG)
+			std::cout << "checking value " << node->getValue() << std::endl;
+			
 		if(value < node->getValue())
 		{
 			//check the left child
@@ -237,7 +245,8 @@ void CTree::fixLeftLeftRedImbalance(CNode *node)
 	//since parent and node are red, we fix that
 	node->setNodeColor(BLACK);
 	grandparent->setNodeColor(BLACK);
-	std::cout << "left " << node->getValue() << " parent " << parent->getValue() << " right " << grandparent->getValue() << std::endl;
+	if(TREE_DEBUG)
+		std::cout << "left " << node->getValue() << " parent " << parent->getValue() << " right " << grandparent->getValue() << std::endl;
 }
 
 void CTree::fixLeftRightRedImbalance(CNode *node)
@@ -281,7 +290,8 @@ void CTree::fixLeftRightRedImbalance(CNode *node)
 	//parent goes black
 	parent->setNodeColor(BLACK);
 	grandparent->setNodeColor(BLACK);
-	std::cout << "left " << parent->getValue() << " parent " << node->getValue() << " right " << grandparent->getValue() << std::endl;
+	if(TREE_DEBUG)
+		std::cout << "left " << parent->getValue() << " parent " << node->getValue() << " right " << grandparent->getValue() << std::endl;
 }
 
 void CTree::fixRightLeftRedImbalance(CNode *node)
@@ -319,7 +329,8 @@ void CTree::fixRightLeftRedImbalance(CNode *node)
 	node->setLeftChild(grandparent);
 	parent->setNodeColor(BLACK);
 	grandparent->setNodeColor(BLACK);
-	std::cout << "left " << grandparent->getValue() << " parent " << node->getValue() << " right " << parent->getValue() << std::endl;
+	if(TREE_DEBUG)
+		std::cout << "left " << grandparent->getValue() << " parent " << node->getValue() << " right " << parent->getValue() << std::endl;
 }
 
 void CTree::fixRightRightRedImbalance(CNode *node)
@@ -354,6 +365,7 @@ void CTree::fixRightRightRedImbalance(CNode *node)
 	parent->setRightChild(node);
 	node->setNodeColor(BLACK);
 	grandparent->setNodeColor(BLACK);
-	std::cout << "left " << grandparent->getValue() << " parent " << parent->getValue() << " right " << node->getValue() << std::endl;
+	if(TREE_DEBUG)
+		std::cout << "left " << grandparent->getValue() << " parent " << parent->getValue() << " right " << node->getValue() << std::endl;
 }
 
