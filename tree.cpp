@@ -1,371 +1,256 @@
-//tree.cpp
-//Source file for the red-black tree
-
 #include "stdafx.h"
 #include "tree.h"
 
-#define TREE_DEBUG 0
-
-//constructor
-CTree::CTree() : m_median(0)
+Tree::Tree() : left(0), right(0), parent(0), red(false), value(0)
 {
-
-	//Root should be black
-	
-	m_median = new CNode(50, BLACK);
-	CNode *test = new CNode(17);
-	CNode *n = new CNode(14);
-	CNode *r = new CNode(64);
-	CNode *l = new CNode(100);
-	CNode *e = new CNode(72);
-	CNode *p = new CNode(110);
-	CNode *o = new CNode(120);
-
-	addNode(test);
-	addNode(n);
-	addNode(r);
-	addNode(l);
-	addNode(e);
-	addNode(p);
-	addNode(o);
-	
 }
 
-int CTree::findNumLeftChildren(CNode *node)
+Tree::Tree(int val) : left(0), right(0), parent(0), value(val), red(false)
 {
-	//Recursively determines how many left children there are
-	//debugging function, we should'nt actually use this in the tree
-	int num = 0;
-	if(node->getLeftChild()!=0)
+}
+
+Tree::~Tree()
+{
+	if(left)
+		delete left;
+	if(right)
+		delete right;
+}
+
+Tree::Tree(const Tree *t)
+{
+	//copy constructor
+	this->value = t->value;
+	if(t->right)
 	{
-		num++;
-		num+=findNumLeftChildren(node->getLeftChild());
+		right = new Tree(t->right);
 	}
-	return num;
-}
-
-int CTree::findNumRightChildren(CNode *node)
-{
-	//Another recursive function
-	int num = 0;
-	if(node->getRightChild()!=0)
+	if(t->left)
 	{
-		num++;
-		num+=findNumRightChildren(node->getLeftChild());
-	}
-	return num;
-}
-
-bool CTree::isNodeBalanced(CNode *node)
-{
-	//if node is red both of its children must be black
-	//null pointers are black
-	if(node->getNodeColor() == RED)
-	{
-		if(node->getLeftChild() != 0)
-		{
-			if(node->getLeftChild()->getNodeColor() != BLACK)
-			{
-				//left node is red
-				return false;
-			}
-		}
-		if(node->getRightChild() != 0)
-		{
-			if(node->getRightChild()->getNodeColor() != BLACK)
-			{
-				return false;
-			}
-		}
-		if(node->getParent()->getNodeColor() == RED)
-		{
-			//red cannot have a parent that is red
-			return false;
-		}
+		left = new Tree(t->left);
 	}
 }
 
-void CTree::addNode(CNode *node)
+Tree& Tree::operator=(const Tree *t)
 {
-	push(node);
-	node->setNodeColor(RED);
-	
-	while((node != m_median) && (node->getParent()->getNodeColor() == RED))
+	//make sure we delete all the children first
+	clear();
+	this->value = t->value;
+	if(t->right)
 	{
-		//we have double red
-		//so we start transformations
-		if(TREE_DEBUG)
+		right = new Tree(t->right);
+	}
+	if(t->left)
+	{
+		left = new Tree(t->left);
+	}
+	return *this;
+}
+
+void Tree::push(int val)
+{
+	
+	if(val < value)
+	{
+		//lesser than
+		//go to left node
+		if(left)
 		{
-			std::cout << "balancing " << node->getValue() << std::endl;
-			std::cout << "root " << m_median->getValue() << std::endl;
-		}
-		if(node->getParent()->getValue() < node->getParent()->getParent()->getValue())
-		{
-			//left sided
-			if(node == node->getParent()->getLeftChild())
-			{
-				//left left side double red
-				fixLeftLeftRedImbalance(node);
-			}
-			else
-			{
-				//has to be right sided then
-				fixLeftRightRedImbalance(node);
-			}
+			left->push(val);
 		}
 		else
 		{
-			//right sided
-			if(node == node->getParent()->getRightChild())
-			{
-				fixRightRightRedImbalance(node);
-			}
-			else
-			{
-				fixRightLeftRedImbalance(node);
-			}
+			//create new node
+			Tree* new_node = new Tree(val);
+			new_node->red = true;
+			left = new_node;
+			left->parent = this;
 		}
-
-		node = node->getParent();
-
 	}
-	
-
-	//make sure root is black after this
-	//so we don't accidently change it
-	m_median->setNodeColor(BLACK);
-	
-}
-
-void CTree::push(CNode *node)
-{
-	CNode *root = m_median;
-	if(TREE_DEBUG)
-		std::cout << "adding value " << node->getValue() << std::endl;
-	if(root == 0)
+	else if(val > value)
 	{
-		//If there was no root to begin with
-		//we'll make it the root
-		m_median = node;
+		//greater than
+		if(right)
+		{
+			right->push(val);
+		}
+		else
+		{
+			Tree* new_node = new Tree(val);
+			new_node->red = true;
+			right = new_node;
+			right->parent = this;
+		}
 	}
 	else
 	{
-		//since the assignchild memberfunction returns false
-		//when the node already has a child, we keep going down
-		//until we find one without a child
-		while(root->assignChild(node) == false)
+		//found the same value so we don't do anything
+		//for future use, we could add somethingn like a list to each value
+	}
+	//check for balance
+	rebalance();
+	return;
+}
+
+void Tree::erase(int val)
+{
+	//find value first
+	if(val < value)
+	{
+		//go left
+		left->erase(val);
+	}
+	else if(val > value)
+	{
+		//go right
+		right->erase(val);
+	}
+	else
+	{
+
+		//found it so do actual deletion stuff
+
+	}
+}
+
+
+void Tree::clear()
+{
+	//delete everything in here
+	if(left)
+		delete left;
+	if(right)
+		delete right;
+}
+
+void Tree::rebalance()
+{
+	if(!parent)
+	{
+		//we're at the root, which should always be black so
+		red = false;
+	}
+	if(left)
+	{
+		if(red && left->red)
 		{
-			if(node->getValue() < root->getValue())
+			//unbalanced
+			//left imbalance
+			//now we have to determine if its a right-left or a left-left
+			//we shouldn't check if it doesnt have a parent because that would mean its the root
+			//and if the root is red we dun goof'd somewhere
+			if(parent->right == this)
 			{
-				//left
-				root = root->getLeftChild();
+				//right-left
+				rotate_right(this);
+				rotate_left(parent);
+				red = false;
+				parent->red = true;
+				left->red = false;
 			}
 			else
 			{
-				//right
-				root = root->getRightChild();
+				//left left
+				//do a single rightward rotation
+				//save the pointers for easy color changing
+				//remember that we didnt swap the pointers
+				Tree *l = parent;
+				Tree *r = left;
+				red = false;
+				l->red = true;
+				r->red = false;
+				rotate_right(parent);
+				//and change the colors
+
 			}
 		}
 	}
-}
-
-CNode* CTree::findValue(int value)
-{
-	//we'll return 0 if it wasn't found
-
-	CNode *node = m_median;
-	while(value != node->getValue())
+	if(right)
 	{
-		if(TREE_DEBUG)
-			std::cout << "checking value " << node->getValue() << std::endl;
-			
-		if(value < node->getValue())
+		if(red && right->red)
 		{
-			//check the left child
-			if(node->getLeftChild() != 0)
+			//right imbalance
+			if(parent->right == this)
 			{
-				node = node->getLeftChild();
+				//right-right imbalance
+				rotate_left(parent);
+				//and change the colors
+				red = false;
+				right->red = false;
+				parent->red = true;
 			}
 			else
 			{
-				//no more to check
-				return 0;
-			}
-		}
-		else
-		{
-			//had to be greater than
-			if(node->getRightChild() !=0)
-			{
-				node = node->getRightChild();
-			}
-			else
-			{
-				return 0;
+				Tree *l = parent;
+				Tree *r = right;
+				//right - left imbalance
+				rotate_left(this);
+				rotate_right(parent);
+				red = false;
+				l->red =true;
+				r->red = false;
 			}
 		}
 	}
-	return node;
+	if(!parent)
+		red = false;
 }
 
-void CTree::fixLeftLeftRedImbalance(CNode *node)
+void Tree::rotate_right(Tree *n)
 {
-	//Based off Chris Okasaki's red black tree
-	//Check the header file for a rough diagram of what it does
-	CNode *parent = node->getParent();
-	CNode *grandparent = node->getParent()->getParent();
-	if(grandparent == m_median)
-	{
-		//grandparent was the root
-		m_median = parent;
-	}
-	else
-	{
-		//we reassign the root cause we just broke a chain
-		if(grandparent == grandparent->getParent()->getLeftChild())
-		{
-			//was a left child
-			grandparent->getParent()->setLeftChild(parent);
-		}
-		else
-		{
-			//right child
-			grandparent->getParent()->setRightChild(parent);
-		}
-	}
-	//parent will be the new red node
-	//parent of the parent and node will become black
-	//parent of parent becomes the new right and node becomes left
-	//parent is a left child node
-	grandparent->setLeftChild(parent->getRightChild());
+	//rotates with its left child rightward
+	//dont check if left exists because we already did that in rebalance()
 
-	parent->setRightChild(grandparent);
-	parent->setLeftChild(node);
-	//quick and easy
-	//since parent and node are red, we fix that
-	node->setNodeColor(BLACK);
-	grandparent->setNodeColor(BLACK);
-	if(TREE_DEBUG)
-		std::cout << "left " << node->getValue() << " parent " << parent->getValue() << " right " << grandparent->getValue() << std::endl;
-}
-
-void CTree::fixLeftRightRedImbalance(CNode *node)
-{
-	//similar to above function but
-	CNode *parent = node->getParent();
-	CNode *grandparent = node->getParent()->getParent();
-	if(parent->getParent() == m_median)
-	{
-		//parents parent was the root
-		//maake sure we don't 'lose' the old root though
-		m_median = node;
-	}
-	else
-	{
-		//we reassign the root cause we just broke a chain
-		if(grandparent == grandparent->getParent()->getLeftChild())
-		{
-			//was a left child
-			grandparent->getParent()->setLeftChild(node);
-		}
-		else
-		{
-			//right child
-			grandparent->getParent()->setRightChild(node);
-		}
-	}
-	//since the new node is on the right side, it becomes the new root of this sub branch
-	//why? because by being placed on the right side, it means its the median number
-	//so we reassign it
-	if(node->getLeftChild() != 0)
-	{
-		parent->setRightChild(node->getLeftChild());
-	}
-
-	grandparent->setLeftChild(node->getRightChild());
-
-	node->setLeftChild(parent);
-	node->setRightChild(grandparent);
-	//node remains red
-	//parent goes black
-	parent->setNodeColor(BLACK);
-	grandparent->setNodeColor(BLACK);
-	if(TREE_DEBUG)
-		std::cout << "left " << parent->getValue() << " parent " << node->getValue() << " right " << grandparent->getValue() << std::endl;
-}
-
-void CTree::fixRightLeftRedImbalance(CNode *node)
-{
-	CNode *parent = node->getParent();
-	CNode *grandparent = node->getParent()->getParent();
-	//new node is now root
-	if(parent->getParent() == m_median)
-	{
-		//parents parent was the root
-		m_median = node;
-	}
-	else
-	{
-		//we reassign the root cause we just broke a chain
-		if(grandparent == grandparent->getParent()->getLeftChild())
-		{
-			//was a left child
-			grandparent->getParent()->setLeftChild(node);
-		}
-		else
-		{
-			//right child
-			grandparent->getParent()->setRightChild(node);
-		}
-	}
-	if(node->getRightChild() != 0)
-	{
-		parent->setLeftChild(node->getRightChild());
-	}
-
-	grandparent->setRightChild(node->getLeftChild());
-
-	node->setRightChild(parent);
-	node->setLeftChild(grandparent);
-	parent->setNodeColor(BLACK);
-	grandparent->setNodeColor(BLACK);
-	if(TREE_DEBUG)
-		std::cout << "left " << grandparent->getValue() << " parent " << node->getValue() << " right " << parent->getValue() << std::endl;
-}
-
-void CTree::fixRightRightRedImbalance(CNode *node)
-{
-	CNode *parent = node->getParent();
-	CNode *grandparent = node->getParent()->getParent();
-	//parent is now root
-	if(parent->getParent() == m_median)
-	{
-		//parents parent was the root
-		m_median = parent;
-	}
-	else
-	{
-		//we reassign the root cause we just broke a chain
-		if(grandparent == parent->getParent()->getParent()->getLeftChild())
-		{
-			//was a left child
-			grandparent->getParent()->setLeftChild(parent);
-		}
-		else
-		{
-			//right child
-			grandparent->getParent()->setRightChild(parent);
-		}
-	}
-
-
-	grandparent->setRightChild(parent->getLeftChild());
+	//do pointer swapping
+	//just swap the values
 	
-	parent->setLeftChild(grandparent);
-	parent->setRightChild(node);
-	node->setNodeColor(BLACK);
-	grandparent->setNodeColor(BLACK);
-	if(TREE_DEBUG)
-		std::cout << "left " << grandparent->getValue() << " parent " << parent->getValue() << " right " << node->getValue() << std::endl;
+	Tree *a = n->left->left;
+	Tree *b = n->left->right;
+	Tree *c = n->right;
+	Tree *p = n->left;
+	int t = n->value;
+	n->value = n->left->value;
+	n->left->value = t;
+
+	//swap pointers and set parents
+	n->right = p;
+	if(p)
+		p->parent = n;
+	n->left = a;
+	if(a)
+		a->parent = n;
+	n->right->right = c;
+	if(c)
+		c->parent = n->right;
+	n->right->left = b;
+	if(b)
+		b->parent = n->right;
+
 }
 
+void Tree::rotate_left(Tree *n)
+{
+	//rotate with the right child leftward
+	Tree *a = n->left;
+	Tree *b = n->right->left;
+	Tree *c = n->right->right;
+	Tree *q = n->right;
+
+	int t = n->value;
+	n->value = n->right->value;
+	n->right->value = t;
+
+	//swap pointers and set parents
+	n->right = c;
+	if(c)
+		c->parent = n;
+	n->left = q;
+	if(q)
+		q->parent = n;
+	n->left->left = a;
+	if(a)
+		a->parent = n->left;
+	n->left->right = b;
+	if(b)
+		b->parent = n->left;
+}
