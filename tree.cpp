@@ -94,6 +94,7 @@ void Tree::push(int val)
 
 void Tree::erase(int val)
 {
+	//massive function of mostly dealing with cases
 	//find value first
 	if(val < value)
 	{
@@ -105,11 +106,104 @@ void Tree::erase(int val)
 		//go right
 		right->erase(val);
 	}
-	else
+	else if(val == value)
 	{
 
 		//found it so do actual deletion stuff
+		if(!left && !right)
+		{
+			//if no children this is a lot easier
+			if(parent)
+			{
+				//we need to adjust colors
+				parent->red = true;
+				
+				if(parent->left == this)
+				{
+					parent->left = 0;
+					if(parent->red && !red)
+					{
+						//if this node is black and its parent is red
+						if(parent->right)
+						{
+							//check if a sibling exists
+							//sibling has to be black or else the tree was not balanced
+							parent->red = false;
+							parent->right->red = true;
+						}
+						else
+						{
+							//if no sibling
+							parent->red = false;
+						}
+					}
+				}
+				else
+				{
+					parent->right = 0;
+					if(parent->red && !red)
+					{
+						if(parent->left)
+						{
+							parent->red = false;
+							parent->left->red = true;
+						}
+						else
+						{
+							parent->red = false;
+						}
+					}
+				}
+				delete this;
 
+				
+			}
+			else
+			{
+				//this is the root
+				
+			}
+		}
+		else if(left&&right)
+		{
+			//has both children
+			if(right->left)
+			{
+				//if the right has a left we swap with it
+
+			}
+			else if(left->right)
+			{
+				//if the left has a right then we swap with that
+			}
+			else
+			{
+				//just swap with the right
+				int t = value;
+				value = right->value;
+				right->value = t;
+				
+				delete right;
+				right = 0;
+			}
+		}
+		else if(left)
+		{
+			//only has a left child
+			if(left->right)
+			{
+				//if left has a right child
+				//we swap with that
+				int t = value;
+				value = left->right->value;
+				left->right->value = t;
+			}
+		}
+	}
+	else
+	{
+		//did not find
+		return;
 	}
 }
 
@@ -141,12 +235,14 @@ void Tree::rebalance()
 			//and if the root is red we dun goof'd somewhere
 			if(parent->right == this)
 			{
-				//right-left
-				rotate_right(this);
-				rotate_left(parent);
+				//make sure to change colors before we change pointers or we could jsut save the pointers
 				red = false;
 				parent->red = true;
 				left->red = false;
+				//right-left
+				rotate_right(this);
+				rotate_left(parent);
+
 			}
 			else
 			{
@@ -172,12 +268,13 @@ void Tree::rebalance()
 			//right imbalance
 			if(parent->right == this)
 			{
-				//right-right imbalance
-				rotate_left(parent);
-				//and change the colors
 				red = false;
 				right->red = false;
 				parent->red = true;
+				//right-right imbalance
+				rotate_left(parent);
+				//and change the colors
+
 			}
 			else
 			{
