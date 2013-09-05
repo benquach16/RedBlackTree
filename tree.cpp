@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "tree.h"
 
+//constructors
 Tree::Tree() : left(0), right(0), parent(0), red(false), value(0)
 {
 }
@@ -9,6 +10,7 @@ Tree::Tree(int val) : left(0), right(0), parent(0), value(val), red(false)
 {
 }
 
+//destructor
 Tree::~Tree()
 {
 	if(left)
@@ -99,112 +101,57 @@ void Tree::erase(int val)
 	if(val < value)
 	{
 		//go left
-		left->erase(val);
+		if(left)
+			left->erase(val);
+		return;
 	}
 	else if(val > value)
 	{
 		//go right
-		right->erase(val);
+		if(right)
+			right->erase(val);
+		return;
 	}
 	else if(val == value)
 	{
 
 		//found it so do actual deletion stuff
-		if(!left && !right)
+		if(parent)
 		{
-			//if no children this is a lot easier
-			if(parent)
+			//if no children
+			
+			if(!left && !right)
 			{
-				//we need to adjust colors
-				parent->red = true;
-				
-				if(parent->left == this)
+				if(red)
 				{
-					parent->left = 0;
-					if(parent->red && !red)
-					{
-						//if this node is black and its parent is red
-						if(parent->right)
-						{
-							//check if a sibling exists
-							//sibling has to be black or else the tree was not balanced
-							parent->red = false;
-							parent->right->red = true;
-						}
-						else
-						{
-							//if no sibling
-							parent->red = false;
-						}
-					}
-				}
-				else
-				{
-					parent->right = 0;
-					if(parent->red && !red)
-					{
-						if(parent->left)
-						{
-							parent->red = false;
-							parent->left->red = true;
-						}
-						else
-						{
-							parent->red = false;
-						}
-					}
+					//this is a recently added node so removal is easy
+					if(this == parent->left)
+						parent->left = 0;
+					else
+						parent->right = 0;
 				}
 				delete this;
-
-				
+				return;
+			}
+			delete_case1();
+			if(this == parent->right)
+			{
+				parent->right = 0;
+				delete this;
 			}
 			else
 			{
-				//this is the root
-				
+				parent->left = 0;
+				delete this;
 			}
 		}
-		else if(left&&right)
+		else
 		{
-			//has both children
-			if(right->left)
-			{
-				//if the right has a left we swap with it
-
-			}
-			else if(left->right)
-			{
-				//if the left has a right then we swap with that
-			}
-			else
-			{
-				//just swap with the right
-				int t = value;
-				value = right->value;
-				right->value = t;
-				
-				delete right;
-				right = 0;
-			}
-		}
-		else if(left)
-		{
-			//only has a left child
-			if(left->right)
-			{
-				//if left has a right child
-				//we swap with that
-				int t = value;
-				value = left->right->value;
-				left->right->value = t;
-			}
+			//this is the root
 		}
 	}
-	else
-	{
-		//did not find
-		return;
-	}
+	//rebalance();
+	return;
 }
 
 
@@ -217,6 +164,7 @@ void Tree::clear()
 		delete right;
 }
 
+//private functions
 void Tree::rebalance()
 {
 	if(!parent)
@@ -350,4 +298,145 @@ void Tree::rotate_left(Tree *n)
 	n->left->right = b;
 	if(b)
 		b->parent = n->left;
+}
+
+//private function
+void Tree::delete_case1()
+{
+	//make sure we have a parent or else we would go into an infinite loop
+	if(parent)
+		delete_case2();
+}
+
+//private function
+void Tree::delete_case2()
+{
+	//so if our sibling is red we know the parent is black
+	//then we can flip the colors and do a rotation to maintain 
+	//equal number of black nodes
+	if(sibling()->red)
+	{
+		//create black node as the grandparent
+		//which is the former sibling
+		parent->red = true;
+		sibling()->red = false;
+		if(this == parent->left)
+			rotate_left(parent);
+		else
+			rotate_right(parent);
+	}
+	//if its a black node we ignore keeping the invarient and go onto 
+	//the next case
+	delete_case3();
+}
+
+void Tree::delete_case3()
+{
+	if(!(parent->red) && !(sibling()->red))
+	{
+		//so assuming that we didn't go through the previous case
+		//and have black parent and black sibling
+		//we have to fix the fact that we will be removing 
+		//a black node from a path
+		//so we turn sibling red and repeat everything on the parent
+		sibling()->red = true;
+		parent->delete_case1();
+	}
+	else
+		//if we went through delete_case2 rotations go straigth through
+		delete_case4();
+}
+
+void Tree::delete_case4()
+{
+	//if parent is red and siblings family is black
+	//we add another black to current nodes path by making parent red
+	//and removing a black from siblings path
+	if(parent->red && !(sibling()->red) &&
+		!(sibling()->left->red) && !(sibling()->right->red))
+	{
+		sibling()->red = true;
+		parent->red = false;
+		return;
+	}
+	else
+		delete_case5();
+
+}
+
+void Tree::delete_case5()
+{
+	//if sibling is black
+	if(!(sibling()->red))
+	{
+		//if siblings family has a single red, we have to make sure that the opposite
+		//child of the sibling is red which case 6 solvse
+		if(this == parent->left && !sibling()->right->red && sibling()->left->red)
+		{
+			sibling()->red = true;
+			sibling()->left->red = false;
+			rotate_right(sibling());
+		}
+		else if(this == parent->right && !sibling()->left->red && sibling()->right->red)
+		{
+			sibling()->red = true;
+			sibling()->right->red = false;
+			rotate_left(sibling());
+		}
+	}
+	delete_case6();
+}
+
+void Tree::delete_case6()
+{
+	//we make the sibling have the same color as the parent
+	//then we make the parent black and rotate
+	sibling()->red = parent->red;
+	parent->red = false;
+	if(this == parent->left)
+	{
+		sibling()->right->red = false;
+		rotate_left(parent);
+	}
+	else if (this == parent->right)
+	{
+		sibling()->left->red = false;
+		rotate_right(parent);
+	}
+
+}
+
+Tree* Tree::get_left()
+{
+	if(left)
+		left->get_left();
+	else
+		return this;
+}
+
+Tree* Tree::get_right()
+{
+	if(right)
+		right->get_right();
+	else
+		return this;
+}
+
+//private function
+//helper function designed to find sibling nodes
+Tree* Tree::sibling()
+{
+	if(parent)
+	{
+		if(this == parent->left)
+		{
+			return parent->right;
+		}
+		else
+		{
+			return parent->left;
+		}
+	}
+	else
+		return 0;
 }

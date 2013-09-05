@@ -46,6 +46,19 @@ private:
 	void rebalance();
 	void rotate_right(Tree *n);
 	void rotate_left(Tree *n);
+	//we have multiple deletion functions to cover all the cases
+	void delete_case1();
+	void delete_case2();
+	void delete_case3();
+	void delete_case4();
+	void delete_case5();
+	void delete_case6();
+	//get the farthest left child pointer for deletion
+	Tree *get_left();
+	Tree *get_right();
+	//get sibling
+	Tree *sibling();
+
 	Tree *right;
 	Tree *left;
 	Tree *parent;
