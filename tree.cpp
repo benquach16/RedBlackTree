@@ -129,8 +129,141 @@ void Tree::erase(int val)
 						parent->left = 0;
 					else
 						parent->right = 0;
+					delete this;
+					return;
 				}
-				delete this;
+			}
+			//if we have children this is a bit more problematic
+			//swap with a childless node
+			else if(!left)
+			{
+				//if has a right child
+				//we check if the right has children
+				if(!(right->right) && !(right->left))
+				{
+					//no children so we can just swap with the right child
+					int t = right->value;
+					right->value = value;
+					value = t;
+					right->erase(val);
+				}
+				else if(!(right->right))
+				{
+					//has a left child
+					//so we recusively find the leaf node
+					Tree *leaf_node = right->left->get_left();
+					//swap with that and call erase
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				else if(!(right->left))
+				{
+					//has a right child but no left
+					//swap with the right->right child since that is a leaf node
+					int t = right->right->value;
+					right->right->value = value;
+					value = t;
+					right->right->erase(val);
+				}
+				else
+				{
+					//right has two children
+					Tree *leaf_node = right->left->get_left();
+					//swap with that and call erase
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				return;
+			}
+			else if(!right)
+			{
+				//has a left child
+				//do the same things with right but flipped
+				if(!(left->right) && !(left->left))
+				{
+					//no left family
+					int t = left->value;
+					left->value = value;
+					value = t;
+					left->erase(val);
+				}
+				else if(!(left->left))
+				{
+					//left has a right so we find the leaf node
+					Tree *leaf_node = left->right->get_right();
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				else if(!(left->right))
+				{
+					//has a left left
+					//so swap with that
+					int t = left->left->value;
+					left->left->value = value;
+					value = t;
+					left->left->erase(val);
+				}
+				else
+				{
+					//left has two children
+					Tree *leaf_node = left->right->get_right();
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				return;
+			}
+			else
+			{
+				//has two children
+				//swap with a leaf node
+				if(right->left)
+				{
+					Tree *leaf_node = right->left->get_left();
+					//swap with that and call erase
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				else if(left->right)
+				{
+					Tree *leaf_node = left->right->get_right();
+					int t = leaf_node->value;
+					leaf_node->value = value;
+					value = t;
+					leaf_node->erase(val);
+				}
+				else if (right->right)
+				{
+					//if right has a right we swap 
+					int t = right->right->value;
+					right->right->value = value;
+					value = t;
+					right->right->erase(val);
+				}
+				else if (left->left)
+				{
+					int t = left->left->value;
+					left->left->value = value;
+					value = t;
+					left->left->erase(val);
+				}
+				else
+				{
+					//children has no children so swapping with either is fine
+					int t = left->value;
+					left->value = value;
+					value = t;
+					left->erase(val);
+				}
 				return;
 			}
 			delete_case1();
@@ -148,6 +281,8 @@ void Tree::erase(int val)
 		else
 		{
 			//this is the root
+			clear();
+			delete this;
 		}
 	}
 	//rebalance();
@@ -377,7 +512,8 @@ void Tree::delete_case5()
 			sibling()->left->red = false;
 			rotate_right(sibling());
 		}
-		else if(this == parent->right && !sibling()->left->red && sibling()->right->red)
+		else if(this == parent->right && 
+			!sibling()->left->red && sibling()->right->red)
 		{
 			sibling()->red = true;
 			sibling()->right->red = false;
@@ -400,7 +536,8 @@ void Tree::delete_case6()
 	}
 	else if (this == parent->right)
 	{
-		sibling()->left->red = false;
+		if(sibling()->left)
+			sibling()->left->red = false;
 		rotate_right(parent);
 	}
 
